@@ -12,8 +12,16 @@ module.exports = {
     .setDescription('Set your gaming profile')
     .addStringOption(option => 
       option.setName('gamename')
-        .setDescription('Your game name')
-        .setRequired(true))
+        .setDescription('Select your game')
+        .setRequired(true)
+        .addChoices(
+          { name: 'VALORANT', value: 'VALORANT' },
+          { name: 'COD', value: 'COD' },
+          { name: 'APEX LEGENDS', value: 'APEX LEGENDS' },
+          { name: 'FORTNITE', value: 'FORTNITE' },
+          { name: 'ROBLOX', value: 'ROBLOX' },
+          { name: 'CS2', value: 'CS2' } // Added CS2 here
+        ))
     .addStringOption(option => 
       option.setName('gamertag')
         .setDescription('Your gamer tag')
@@ -34,7 +42,7 @@ module.exports = {
         ephemeral: true, 
         embeds: [{
           color: hexToDecimal(successColor),
-          description: 'Your profile has been saved!'
+          description: `Your profile for ${gameName} has been saved!`
         }]
       });
     } catch (error) {

@@ -1,38 +1,51 @@
 const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-
-const dbPath = path.resolve(__dirname, '../database/profiles.sqlite');
-const db = new sqlite3.Database(dbPath);
+const db = new sqlite3.Database('./database/profiles.sqlite');
 
 db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS profiles (
-    id TEXT PRIMARY KEY,
-    gameName TEXT,
-    gamerTag TEXT,
-    clanName TEXT
-  )`);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS profiles (
+      userId TEXT,
+      gameName TEXT,
+      gamerTag TEXT,
+      clanName TEXT,
+      PRIMARY KEY (userId, gameName)
+    )
+  `);
 });
 
-function setProfile(id, gameName, gamerTag, clanName) {
+function setProfile(userId, gameName, gamerTag, clanName) {
   return new Promise((resolve, reject) => {
-    db.run(`INSERT OR REPLACE INTO profiles (id, gameName, gamerTag, clanName) VALUES (?, ?, ?, ?)`,
-      [id, gameName, gamerTag, clanName], function(err) {
-        if (err) reject(err);
+    const stmt = db.prepare(`
+      INSERT INTO profiles (userId, gameName, gamerTag, clanName) 
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(userId, gameName) 
+      DO UPDATE SET gamerTag=excluded.gamerTag, clanName=excluded.clanName
+    `);
+    stmt.run(userId, gameName, gamerTag, clanName, function(err) {
+      if (err) {
+        reject(err);
+      } else {
         resolve();
-      });
+      }
+    });
+    stmt.finalize();
   });
 }
 
-function getProfile(id) {
+function getProfileForGame(userId, gameName) {
   return new Promise((resolve, reject) => {
-    db.get(`SELECT * FROM profiles WHERE id = ?`, [id], (err, row) => {
-      if (err) reject(err);
-      resolve(row);
+    db.get(`
+      SELECT gamerTag, clanName 
+      FROM profiles 
+      WHERE userId = ? AND gameName = ?
+    `, [userId, gameName], (err, row) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(row);
+      }
     });
   });
 }
 
-module.exports = {
-  setProfile,
-  getProfile
-};
+module.exports = { setProfile, getProfileForGame };
