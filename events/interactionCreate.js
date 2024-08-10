@@ -1,9 +1,32 @@
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, InteractionType } = require('discord.js');
-const ms = require('ms'); // Utility to parse duration strings
+const fs = require('fs');
+const path = require('path');
+const ms = require('ms');
+
+const DATA_FILE = path.join(__dirname, '../data/tournaments.json');
 
 // In-memory store for tournament data
-const tournamentData = new Map();
+let tournamentData = new Map();
 const scheduledTasks = new Map();
+
+// Load tournament data from file
+function loadTournamentData() {
+    if (fs.existsSync(DATA_FILE)) {
+        const data = JSON.parse(fs.readFileSync(DATA_FILE));
+        data.forEach(tournament => {
+            tournamentData.set(tournament.id, tournament);
+        });
+    }
+}
+
+// Save tournament data to file
+function saveTournamentData() {
+    const data = Array.from(tournamentData.values());
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+// Initialize data loading
+loadTournamentData();
 
 module.exports = {
     name: 'interactionCreate',
@@ -12,6 +35,7 @@ module.exports = {
             const command = client.commands.get(interaction.commandName);
             if (command) command.execute(interaction);
         } else if (interaction.isButton()) {
+            // Handle button interactions
             if (interaction.customId === 'register') {
                 // Show a modal to collect user tag and clan name
                 const modal = new ModalBuilder()
@@ -123,6 +147,7 @@ ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
                 const tournamentName = interaction.fields.getTextInputValue('tournamentName');
                 const gameName = interaction.fields.getTextInputValue('gameName');
                 const durationOrDate = interaction.fields.getTextInputValue('tournamentDate');
+                const creator = interaction.user.id; // Save creator's ID
 
                 let durationText = durationOrDate;
                 let endTime = null;
@@ -190,17 +215,22 @@ ELRoyal  | Waiting
                     content: 'Tournament created successfully!',
                     embeds: [embed],
                     components: [row],
-                    fetchReply: true // Ensure we fetch the message for further use
+                    fetchReply: true
                 });
 
                 // Save tournament data
-                tournamentData.set(sentMessage.id, {
+                const tournament = {
+                    id: sentMessage.id,
                     name: tournamentName,
+                    creator: creator,
                     gameName: gameName,
                     durationText: durationText,
                     endTime: endTime,
                     registrations: []
-                });
+                };
+
+                tournamentData.set(sentMessage.id, tournament);
+                saveTournamentData();
 
                 // Schedule a task to select a random player when the end time is reached
                 const delay = endTime - Date.now();
@@ -229,32 +259,32 @@ ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
                             const originalMessage = await interaction.channel.messages.fetch(sentMessage.id);
                             await originalMessage.edit({
                                 embeds: [updatedEmbed],
-                                components: [row] // Optionally update components if needed
+                                components: [row]
                             });
                         }
                         tournamentData.delete(sentMessage.id);
+                        saveTournamentData();
                     }, delay);
 
                     scheduledTasks.set(sentMessage.id, timeoutId);
                 }
             } else if (interaction.customId === 'registerModal') {
+                // Handle registration
                 const gamertag = interaction.fields.getTextInputValue('gamertag');
                 const clanName = interaction.fields.getTextInputValue('clanname');
 
                 try {
-                    // Make sure interaction.message exists
                     if (!interaction.message || !interaction.message.id) {
                         await interaction.reply({ content: 'Unable to process your registration at this time.', ephemeral: true });
                         return;
                     }
 
-                    // Retrieve and update tournament data
                     const tournament = tournamentData.get(interaction.message.id);
                     if (tournament) {
                         tournament.registrations.push({ gamertag, clanName });
                         tournamentData.set(interaction.message.id, tournament);
+                        saveTournamentData();
 
-                        // Update the embed to reflect the new registration
                         const embed = EmbedBuilder.from(interaction.message.embeds[0]);
                         const updatedEmbed = embed
                             .setFooter({ text: `Total Registrations: ${tournament.registrations.length}` });
