@@ -20,7 +20,7 @@ module.exports = {
           { name: 'APEX LEGENDS', value: 'APEX LEGENDS' },
           { name: 'FORTNITE', value: 'FORTNITE' },
           { name: 'ROBLOX', value: 'ROBLOX' },
-          { name: 'CS2', value: 'CS2' } // Added CS2 here
+          { name: 'CS2', value: 'CS2' }
         ))
     .addStringOption(option => 
       option.setName('gamertag')
