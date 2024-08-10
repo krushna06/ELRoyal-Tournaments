@@ -33,7 +33,12 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setTitle('Ongoing/Upcoming Tournaments')
             .setDescription(ongoingOrUpcoming.map(tournament => 
-                `**Name**: ${tournament.name}\n**Game**: ${tournament.gameName}\n**Date/Duration**: ${tournament.durationText}\n**Registrations**: ${tournament.registrations.length}`
+                `**Name**: ${tournament.name}
+**Game**: ${tournament.gameName}
+**Date/Duration**: ${tournament.durationText}
+**Prize**: ${tournament.prize || 'N/A'}
+**Number of Games**: ${tournament.numberOfGames || 'N/A'}
+**Registrations**: ${tournament.registrations.length}`
             ).join('\n\n'));
 
         await interaction.reply({ embeds: [embed], ephemeral: true });
