@@ -1,9 +1,0 @@
-{
-    "token": "YOUR_BOT_TOKEN",
-    "clientId": "YOUR_CLIENT_ID",
-    "guildId": "YOUR_GUILD_ID",
-    "embedColor": "#7289DA",
-    "successColor": "#00FF00",
-    "errorColor": "#FF0000"
-  }
-  
