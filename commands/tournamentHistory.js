@@ -14,25 +14,21 @@ function loadTournamentData() {
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('tournament-show')
-        .setDescription('Show ongoing or upcoming tournaments'),
+        .setName('tournament-history')
+        .setDescription('Show all tournaments created till now'),
     async execute(interaction) {
         // Load tournaments
         const tournaments = loadTournamentData();
-        const now = Date.now();
 
-        // Filter ongoing or upcoming tournaments
-        const ongoingOrUpcoming = tournaments.filter(tournament => tournament.endTime > now);
-
-        if (ongoingOrUpcoming.length === 0) {
-            await interaction.reply({ content: 'No ongoing or upcoming tournaments.', ephemeral: true });
+        if (tournaments.length === 0) {
+            await interaction.reply({ content: 'No tournaments have been created yet.', ephemeral: true });
             return;
         }
 
         // Create the embed
         const embed = new EmbedBuilder()
-            .setTitle('Ongoing/Upcoming Tournaments')
-            .setDescription(ongoingOrUpcoming.map(tournament => 
+            .setTitle('Tournament History')
+            .setDescription(tournaments.map(tournament => 
                 `**Name**: ${tournament.name}\n**Game**: ${tournament.gameName}\n**Date/Duration**: ${tournament.durationText}\n**Registrations**: ${tournament.registrations.length}`
             ).join('\n\n'));
 
