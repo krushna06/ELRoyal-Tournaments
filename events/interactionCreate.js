@@ -158,11 +158,11 @@ ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
 \`\`\`
 Player 1 | Player 2
 ---------+---------
-ELRoyal  | Random's UserTag
+ELRoyal  | Waiting
 
 Clan:
 ---------+---------
-ELRoyal  | FNATIC
+ELRoyal  | Waiting
 \`\`\`
 **Game**: ${gameName}
 **Duration or Date**: ${durationText}
