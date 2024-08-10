@@ -29,7 +29,7 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setTitle('Tournament History')
             .setDescription(tournaments.map(tournament => 
-                `**Name**: ${tournament.name}\n**Game**: ${tournament.gameName}\n**Date/Duration**: ${tournament.durationText}\n**Registrations**: ${tournament.registrations.length}`
+                `**Name**: ${tournament.name}\n**Game**: ${tournament.gameName}\n**Date/Duration**: ${tournament.durationText}\n**Total Registrations**: ${tournament.registrations.length}`
             ).join('\n\n'));
 
         await interaction.reply({ embeds: [embed], ephemeral: true });
