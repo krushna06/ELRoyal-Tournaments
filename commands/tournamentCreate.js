@@ -36,6 +36,24 @@ module.exports = {
                             .setPlaceholder('Enter the date or duration')
                             .setRequired(true),
                     ),
+                new ActionRowBuilder()
+                    .addComponents(
+                        new TextInputBuilder()
+                            .setCustomId('prize')
+                            .setLabel('Prize')
+                            .setStyle(TextInputStyle.Short)
+                            .setPlaceholder('Enter the prize for the tournament')
+                            .setRequired(true),
+                    ),
+                new ActionRowBuilder()
+                    .addComponents(
+                        new TextInputBuilder()
+                            .setCustomId('numberOfGames')
+                            .setLabel('Number of Games')
+                            .setStyle(TextInputStyle.Short)
+                            .setPlaceholder('Enter the number of games in the tournament')
+                            .setRequired(true),
+                    ),
             );
 
         await interaction.showModal(modal);

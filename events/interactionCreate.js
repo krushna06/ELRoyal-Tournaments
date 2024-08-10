@@ -84,8 +84,9 @@ ${description}
 \`\`\`
 **Game**: ${tournament.gameName}
 **Duration or Date**: ${tournament.durationText}
-**Winner**: ${tournament.winner || 'N/A'}
-                `);
+**Prize**: ${tournament.prize}
+**Number of Games**: ${tournament.numberOfGames}
+                    `);
 
                 // Respond with an ephemeral message showing registrants
                 await interaction.reply({
@@ -112,18 +113,21 @@ ${description}
 \`\`\`
 Player 1 | Player 2
 ---------+---------
-ELRoyal  | ${selectedRegistrant.gamertag || 'Waiting'}
+ELRoyal  | ${selectedRegistrant.gamertag || 'N/A'}
 
 Clan:
 ---------+---------
-ELRoyal  | ${selectedRegistrant.clanName || 'Waiting'}
+ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
 \`\`\`
+**Prize**: ${tournament.prize}
 **Game**: ${tournament.gameName}
+**Number of Games**: ${tournament.numberOfGames}
 **Duration or Date**: ${tournament.durationText}
 **Winner**: ${tournament.winner || 'N/A'}
-                `);
+                    `);
 
                 // Send updated embed
+                tournament.selectedRegistrant = selectedRegistrant;
                 await interaction.update({
                     embeds: [updatedEmbed],
                     components: [new ActionRowBuilder()
@@ -143,15 +147,17 @@ ELRoyal  | ${selectedRegistrant.clanName || 'Waiting'}
                             new ButtonBuilder()
                                 .setCustomId('winner')
                                 .setLabel('WINNER')
-                                .setStyle(ButtonStyle.Danger)
+                                .setStyle(ButtonStyle.Danger),
                         )]
                 });
+
                 await interaction.followUp({ content: 'Player 2 has been randomly selected!', ephemeral: true });
+                saveTournamentData();
             } else if (interaction.customId === 'winner') {
-                // Show a modal to input winner's gamertag
+                // Show a modal to collect the winner's gamertag
                 const modal = new ModalBuilder()
                     .setCustomId('winnerModal')
-                    .setTitle('Set Tournament Winner')
+                    .setTitle('Enter Winner Gamertag')
                     .addComponents(
                         new ActionRowBuilder()
                             .addComponents(
@@ -167,10 +173,11 @@ ELRoyal  | ${selectedRegistrant.clanName || 'Waiting'}
             }
         } else if (interaction.type === InteractionType.ModalSubmit) {
             if (interaction.customId === 'createTournamentModal') {
-                // Handle tournament creation modal submission
                 const tournamentName = interaction.fields.getTextInputValue('tournamentName');
                 const gameName = interaction.fields.getTextInputValue('gameName');
                 const durationOrDate = interaction.fields.getTextInputValue('tournamentDate');
+                const prize = interaction.fields.getTextInputValue('prize'); // Get the Prize input
+                const numberOfGames = interaction.fields.getTextInputValue('numberOfGames'); // Get the Number of Games input
                 const creator = interaction.user.id; // Save creator's ID
 
                 let durationText = durationOrDate;
@@ -213,10 +220,12 @@ Clan:
 ---------+---------
 ELRoyal  | Waiting
 \`\`\`
+**Prize**: ${prize}
 **Game**: ${gameName}
+**Number of Games**: ${numberOfGames}
 **Duration or Date**: ${durationText}
 **Winner**: N/A
-                `)
+                    `)
                     .setFooter({ text: 'Total Registrations: 0' });
 
                 const row = new ActionRowBuilder()
@@ -236,7 +245,7 @@ ELRoyal  | Waiting
                         new ButtonBuilder()
                             .setCustomId('winner')
                             .setLabel('WINNER')
-                            .setStyle(ButtonStyle.Danger)
+                            .setStyle(ButtonStyle.Danger),
                     );
 
                 // Send message with embed and buttons
@@ -254,9 +263,12 @@ ELRoyal  | Waiting
                     creator: creator,
                     gameName: gameName,
                     durationText: durationText,
+                    prize: prize, // Save prize
+                    numberOfGames: numberOfGames, // Save number of games
                     endTime: endTime,
                     registrations: [],
-                    winner: 'N/A'
+                    selectedRegistrant: null, // New field to track selected registrant
+                    winner: null
                 };
 
                 tournamentData.set(sentMessage.id, tournament);
@@ -270,7 +282,7 @@ ELRoyal  | Waiting
                         if (tournament && tournament.registrations.length > 0) {
                             const randomIndex = Math.floor(Math.random() * tournament.registrations.length);
                             const selectedRegistrant = tournament.registrations[randomIndex];
-                            
+
                             const updatedEmbed = EmbedBuilder.from(embed)
                                 .setDescription(`
 \`\`\`
@@ -282,10 +294,12 @@ Clan:
 ---------+---------
 ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
 \`\`\`
-**Game**: ${tournament.gameName}
-**Duration or Date**: ${tournament.durationText}
-**Winner**: ${tournament.winner || 'N/A'}
-                            `);
+**Prize**: ${prize}
+**Game**: ${gameName}
+**Number of Games**: ${numberOfGames}
+**Duration or Date**: ${durationText}
+**Winner**: N/A
+                                `);
 
                             const originalMessage = await interaction.channel.messages.fetch(sentMessage.id);
                             await originalMessage.edit({
@@ -300,124 +314,73 @@ ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
                     scheduledTasks.set(sentMessage.id, timeoutId);
                 }
             } else if (interaction.customId === 'registerModal') {
-                // Handle registration modal submission
+                // Handle player registration
                 const gamertag = interaction.fields.getTextInputValue('gamertag');
                 const clanName = interaction.fields.getTextInputValue('clanname');
 
-                try {
-                    if (!interaction.message || !interaction.message.id) {
-                        await interaction.reply({ content: 'Unable to process your registration at this time.', ephemeral: true });
-                        return;
-                    }
-
-                    const tournament = tournamentData.get(interaction.message.id);
-                    if (tournament) {
-                        tournament.registrations.push({ gamertag, clanName });
-                        tournamentData.set(interaction.message.id, tournament);
-                        saveTournamentData();
-
-                        const embed = EmbedBuilder.from(interaction.message.embeds[0]);
-                        const updatedEmbed = embed
-                            .setFooter({ text: `Total Registrations: ${tournament.registrations.length}` });
-
-                        await interaction.update({
-                            embeds: [updatedEmbed],
-                            components: [new ActionRowBuilder()
-                                .addComponents(
-                                    new ButtonBuilder()
-                                        .setCustomId('register')
-                                        .setLabel('REGISTER')
-                                        .setStyle(ButtonStyle.Primary),
-                                    new ButtonBuilder()
-                                        .setCustomId('list')
-                                        .setLabel('LIST')
-                                        .setStyle(ButtonStyle.Secondary),
-                                    new ButtonBuilder()
-                                        .setCustomId('select')
-                                        .setLabel('SELECT')
-                                        .setStyle(ButtonStyle.Success),
-                                    new ButtonBuilder()
-                                        .setCustomId('winner')
-                                        .setLabel('WINNER')
-                                        .setStyle(ButtonStyle.Danger)
-                                )]
-                        });
-                    } else {
-                        await interaction.reply({ content: 'No tournament data found.', ephemeral: true });
-                    }
-                } catch (error) {
-                    console.error('Error handling registration:', error);
-                    await interaction.reply({ content: 'An error occurred while processing your registration.', ephemeral: true });
+                // Fetch tournament data
+                const tournament = tournamentData.get(interaction.message.id);
+                if (!tournament) {
+                    await interaction.reply({ content: 'No tournament data found for this message.', ephemeral: true });
+                    return;
                 }
+
+                // Add registration
+                tournament.registrations.push({ gamertag, clanName });
+
+                // Update the embed with the registration count
+                const originalMessage = await interaction.channel.messages.fetch(interaction.message.id);
+                const embed = originalMessage.embeds[0];
+                const updatedEmbed = EmbedBuilder.from(embed)
+                    .setFooter({ text: `Total Registrations: ${tournament.registrations.length}` });
+
+                await originalMessage.edit({
+                    embeds: [updatedEmbed]
+                });
+
+                await interaction.reply({ content: `${gamertag} from ${clanName} registered successfully!`, ephemeral: true });
+                saveTournamentData();
             } else if (interaction.customId === 'winnerModal') {
-                // Handle winner modal submission
                 const winnerGamertag = interaction.fields.getTextInputValue('winnerGamertag');
 
-                try {
-                    if (!interaction.message || !interaction.message.id) {
-                        await interaction.reply({ content: 'Unable to process your winner entry at this time.', ephemeral: true });
-                        return;
-                    }
+                // Fetch tournament data
+                const tournament = tournamentData.get(interaction.message.id);
+                if (!tournament) {
+                    await interaction.reply({ content: 'No tournament data found for this message.', ephemeral: true });
+                    return;
+                }
 
-                    const tournament = tournamentData.get(interaction.message.id);
-                    if (tournament) {
-                        // Update the embed with the winner's gamertag
-                        const embed = EmbedBuilder.from(interaction.message.embeds[0]);
-                        const player2Details = tournament.registrations.length > 0
-                            ? tournament.registrations[tournament.registrations.length - 1]
-                            : { gamertag: 'Waiting', clanName: 'Waiting' };
+                // Update the tournament data with the winner's gamertag
+                tournament.winner = winnerGamertag;
 
-                        const updatedEmbed = embed
-                            .setDescription(`
+                // Update the embed with the winner's gamertag
+                const originalMessage = await interaction.channel.messages.fetch(interaction.message.id);
+                const embed = originalMessage.embeds[0];
+                const updatedEmbed = EmbedBuilder.from(embed)
+                    .setDescription(`
 \`\`\`
 Player 1 | Player 2
 ---------+---------
-ELRoyal  | ${player2Details.gamertag || 'Waiting'}
+ELRoyal  | ${tournament.selectedRegistrant ? tournament.selectedRegistrant.gamertag : 'N/A'}
 
 Clan:
 ---------+---------
-ELRoyal  | ${player2Details.clanName || 'Waiting'}
+ELRoyal  | ${tournament.selectedRegistrant ? tournament.selectedRegistrant.clanName : 'N/A'}
 \`\`\`
+**Prize**: ${tournament.prize}
 **Game**: ${tournament.gameName}
+**Number of Games**: ${tournament.numberOfGames}
 **Duration or Date**: ${tournament.durationText}
-**Winner**: ${winnerGamertag || 'N/A'}
-                            `);
+**Winner**: ${winnerGamertag}
+                    `);
 
-                        await interaction.update({
-                            embeds: [updatedEmbed],
-                            components: [new ActionRowBuilder()
-                                .addComponents(
-                                    new ButtonBuilder()
-                                        .setCustomId('register')
-                                        .setLabel('REGISTER')
-                                        .setStyle(ButtonStyle.Primary),
-                                    new ButtonBuilder()
-                                        .setCustomId('list')
-                                        .setLabel('LIST')
-                                        .setStyle(ButtonStyle.Secondary),
-                                    new ButtonBuilder()
-                                        .setCustomId('select')
-                                        .setLabel('SELECT')
-                                        .setStyle(ButtonStyle.Success),
-                                    new ButtonBuilder()
-                                        .setCustomId('winner')
-                                        .setLabel('WINNER')
-                                        .setStyle(ButtonStyle.Danger)
-                                )]
-                        });
+                await originalMessage.edit({
+                    embeds: [updatedEmbed]
+                });
 
-                        // Save updated tournament data
-                        tournament.winner = winnerGamertag;
-                        tournamentData.set(interaction.message.id, tournament);
-                        saveTournamentData();
-                    } else {
-                        await interaction.reply({ content: 'No tournament data found.', ephemeral: true });
-                    }
-                } catch (error) {
-                    console.error('Error handling winner entry:', error);
-                    await interaction.reply({ content: 'An error occurred while processing the winner entry.', ephemeral: true });
-                }
+                await interaction.reply({ content: `The winner has been set to ${winnerGamertag}!`, ephemeral: true });
+                saveTournamentData();
             }
         }
-    },
+    }
 };
