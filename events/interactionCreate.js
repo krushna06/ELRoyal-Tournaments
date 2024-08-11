@@ -332,24 +332,25 @@ ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
             } else if (interaction.customId === 'registerModal') {
                 const gamertag = interaction.fields.getTextInputValue('gamertag');
                 const clanName = interaction.fields.getTextInputValue('clanname');
-
+                const userId = interaction.user.id; // Capture the user's Discord ID
+            
                 const tournament = tournamentData.get(interaction.message.id);
                 if (!tournament) {
                     await interaction.reply({ content: 'No tournament data found for this message.', ephemeral: true });
                     return;
                 }
-
-                tournament.registrations.push({ gamertag, clanName });
-
+            
+                tournament.registrations.push({ gamertag, clanName, userId }); // Include the userId in the registration
+            
                 const originalMessage = await interaction.channel.messages.fetch(interaction.message.id);
                 const embed = originalMessage.embeds[0];
                 const updatedEmbed = EmbedBuilder.from(embed)
                     .setFooter({ text: `Total Registrations: ${tournament.registrations.length}` });
-
+            
                 await originalMessage.edit({
                     embeds: [updatedEmbed]
                 });
-
+            
                 await interaction.reply({ content: `${gamertag} from ${clanName} registered successfully!`, ephemeral: true });
                 saveTournamentData();
             } else if (interaction.customId === 'winnerModal') {

@@ -1,5 +1,4 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const config = require('../../config/config.json');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -9,7 +8,7 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setTitle('Sourcecode Of This Bot')
       .setDescription('If you wish to purchase a similar copy of this bot, please creatre a ticket in the support server.')
-      .setColor(config.embedColor);
+      .setColor("#2F3136");
 
     const button = new ButtonBuilder()
       .setLabel('Server')
