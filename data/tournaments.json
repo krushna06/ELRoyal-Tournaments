@@ -1,1 +1,25 @@
-[]
+[
+  {
+    "id": "1272331376103919683",
+    "name": "Monthly Showdown",
+    "creator": "853620650592567304",
+    "gameName": "Call Of Duty",
+    "durationText": "10m",
+    "prize": "Nitro Classic",
+    "numberOfGames": "3",
+    "endTime": 1723418438601,
+    "registrations": [
+      {
+        "gamertag": "nostep",
+        "clanName": "fnatic",
+        "userId": "853620650592567304"
+      }
+    ],
+    "selectedRegistrant": {
+      "gamertag": "nostep",
+      "clanName": "fnatic",
+      "userId": "853620650592567304"
+    },
+    "winner": null
+  }
+]

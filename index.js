@@ -2,16 +2,27 @@ const { Client, GatewayIntentBits, REST, Routes, Events } = require('discord.js'
 const { token, clientId, guildId } = require('./config.json');
 const fs = require('fs');
 const path = require('path');
+const { spawn } = require('child_process');
+
+const server = spawn('node', ['server.js'], {
+  stdio: 'inherit', 
+});
+
+server.on('error', (error) => {
+  console.error(`Error starting server: ${error.message}`);
+});
+
+server.on('close', (code) => {
+  console.log(`Server process exited with code ${code}`);
+});
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
-client.commands = new Map(); // Initialize commands collection
+client.commands = new Map();
 const rest = new REST({ version: '10' }).setToken(token);
 
-// Command registration
 async function deployCommands() {
     const commands = [];
 
-    // Helper function to recursively read directories
     function readCommandsDir(dir) {
         const files = fs.readdirSync(dir);
 
@@ -20,13 +31,11 @@ async function deployCommands() {
             const stat = fs.statSync(fullPath);
 
             if (stat.isDirectory()) {
-                // Recurse into subdirectories
                 readCommandsDir(fullPath);
             } else if (file.endsWith('.js')) {
-                // Load command file
                 const command = require(fullPath);
                 commands.push(command.data.toJSON());
-                client.commands.set(command.data.name, command); // Store command in the collection
+                client.commands.set(command.data.name, command);
             }
         }
     }
