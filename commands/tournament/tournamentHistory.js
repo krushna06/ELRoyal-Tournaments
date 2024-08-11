@@ -25,15 +25,16 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setTitle('Tournament History')
-            .setDescription(tournaments.map(tournament => 
-                `**Name**: ${tournament.name}
+            .setDescription(tournaments.map(tournament => {
+                const status = tournament.winner === null ? '🟢 Upcoming' : '🔴 Ended';
+                return `**Name**: ${tournament.name}
 **Game**: ${tournament.gameName}
 **Date/Duration**: ${tournament.durationText}
 **Prize**: ${tournament.prize || 'N/A'}
 **Number of Games**: ${tournament.numberOfGames || 'N/A'}
 **Total Registrations**: ${tournament.registrations.length}
-**Status**: ${tournament.winner ? '🔴 Ended' : '🟢 Upcoming'}`
-            ).join('\n\n'));
+**Status**: ${status}`;
+            }).join('\n\n'));
 
         await interaction.reply({ embeds: [embed], ephemeral: true });
     },
