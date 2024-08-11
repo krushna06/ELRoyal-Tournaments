@@ -31,7 +31,8 @@ module.exports = {
 **Date/Duration**: ${tournament.durationText}
 **Prize**: ${tournament.prize || 'N/A'}
 **Number of Games**: ${tournament.numberOfGames || 'N/A'}
-**Total Registrations**: ${tournament.registrations.length}`
+**Total Registrations**: ${tournament.registrations.length}
+**Status**: ${tournament.winner ? '🔴 Ended' : '🟢 Upcoming'}`
             ).join('\n\n'));
 
         await interaction.reply({ embeds: [embed], ephemeral: true });
