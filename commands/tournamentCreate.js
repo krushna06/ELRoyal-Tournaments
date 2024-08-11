@@ -1,10 +1,31 @@
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+const path = require('path');
+const fs = require('fs');
+
+// Load owner IDs from config
+const CONFIG_FILE = path.join(__dirname, '../config.json');
+let ownerIds = [];
+
+function loadOwnerIds() {
+    if (fs.existsSync(CONFIG_FILE)) {
+        const config = JSON.parse(fs.readFileSync(CONFIG_FILE));
+        ownerIds = config.ownerIds || []; // Ensure `ownerIds` is an array
+    }
+}
+
+// Initialize owner IDs loading
+loadOwnerIds();
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('tournament-create')
         .setDescription('Create a new tournament'),
     async execute(interaction) {
+        // Check if the user is an owner
+        if (!ownerIds.includes(interaction.user.id)) {
+            return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+        }
+
         const modal = new ModalBuilder()
             .setCustomId('createTournamentModal')
             .setTitle('Create Tournament')

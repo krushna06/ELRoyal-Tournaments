@@ -4,10 +4,12 @@ const path = require('path');
 const ms = require('ms');
 
 const DATA_FILE = path.join(__dirname, '../data/tournaments.json');
+const CONFIG_FILE = path.join(__dirname, '../config.json');
 
 // In-memory store for tournament data
 let tournamentData = new Map();
 const scheduledTasks = new Map();
+let ownerIds = [];
 
 // Load tournament data from file
 function loadTournamentData() {
@@ -19,6 +21,14 @@ function loadTournamentData() {
     }
 }
 
+// Load owner IDs from config
+function loadOwnerIds() {
+    if (fs.existsSync(CONFIG_FILE)) {
+        const config = JSON.parse(fs.readFileSync(CONFIG_FILE));
+        ownerIds = config.ownerIds || []; // Ensure `ownerIds` is an array
+    }
+}
+
 // Save tournament data to file
 function saveTournamentData() {
     const data = Array.from(tournamentData.values());
@@ -27,6 +37,7 @@ function saveTournamentData() {
 
 // Initialize data loading
 loadTournamentData();
+loadOwnerIds();
 
 module.exports = {
     name: 'interactionCreate',
@@ -35,7 +46,6 @@ module.exports = {
             const command = client.commands.get(interaction.commandName);
             if (command) command.execute(interaction);
         } else if (interaction.isButton()) {
-            // Handle button interactions
             if (interaction.customId === 'register') {
                 // Show a modal to collect user tag and clan name
                 const modal = new ModalBuilder()
@@ -93,23 +103,29 @@ ${description}
                     embeds: [embed],
                     ephemeral: true
                 });
-            } else if (interaction.customId === 'select') {
-                // Fetch tournament data
-                const tournament = tournamentData.get(interaction.message.id);
-                if (!tournament || tournament.registrations.length === 0) {
-                    await interaction.reply({ content: 'No registrants to select from.', ephemeral: true });
+            } else if (interaction.customId === 'select' || interaction.customId === 'winner') {
+                if (!ownerIds.includes(interaction.user.id)) {
+                    await interaction.reply({ content: 'You do not have permission to use this button.', ephemeral: true });
                     return;
                 }
 
-                // Randomly select a registrant
-                const randomIndex = Math.floor(Math.random() * tournament.registrations.length);
-                const selectedRegistrant = tournament.registrations[randomIndex];
+                if (interaction.customId === 'select') {
+                    // Fetch tournament data
+                    const tournament = tournamentData.get(interaction.message.id);
+                    if (!tournament || tournament.registrations.length === 0) {
+                        await interaction.reply({ content: 'No registrants to select from.', ephemeral: true });
+                        return;
+                    }
 
-                // Update the embed with the selected registrant's details
-                const originalMessage = await interaction.channel.messages.fetch(interaction.message.id);
-                const embed = originalMessage.embeds[0];
-                const updatedEmbed = EmbedBuilder.from(embed)
-                    .setDescription(`
+                    // Randomly select a registrant
+                    const randomIndex = Math.floor(Math.random() * tournament.registrations.length);
+                    const selectedRegistrant = tournament.registrations[randomIndex];
+
+                    // Update the embed with the selected registrant's details
+                    const originalMessage = await interaction.channel.messages.fetch(interaction.message.id);
+                    const embed = originalMessage.embeds[0];
+                    const updatedEmbed = EmbedBuilder.from(embed)
+                        .setDescription(`
 \`\`\`
 Player 1 | Player 2
 ---------+---------
@@ -126,50 +142,51 @@ ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
 **Winner**: ${tournament.winner || 'N/A'}
                     `);
 
-                // Send updated embed
-                tournament.selectedRegistrant = selectedRegistrant;
-                await interaction.update({
-                    embeds: [updatedEmbed],
-                    components: [new ActionRowBuilder()
-                        .addComponents(
-                            new ButtonBuilder()
-                                .setCustomId('register')
-                                .setLabel('REGISTER')
-                                .setStyle(ButtonStyle.Primary),
-                            new ButtonBuilder()
-                                .setCustomId('list')
-                                .setLabel('LIST')
-                                .setStyle(ButtonStyle.Secondary),
-                            new ButtonBuilder()
-                                .setCustomId('select')
-                                .setLabel('SELECT')
-                                .setStyle(ButtonStyle.Success),
-                            new ButtonBuilder()
-                                .setCustomId('winner')
-                                .setLabel('WINNER')
-                                .setStyle(ButtonStyle.Danger),
-                        )]
-                });
-
-                await interaction.followUp({ content: 'Player 2 has been randomly selected!', ephemeral: true });
-                saveTournamentData();
-            } else if (interaction.customId === 'winner') {
-                // Show a modal to collect the winner's gamertag
-                const modal = new ModalBuilder()
-                    .setCustomId('winnerModal')
-                    .setTitle('Enter Winner Gamertag')
-                    .addComponents(
-                        new ActionRowBuilder()
+                    // Send updated embed
+                    tournament.selectedRegistrant = selectedRegistrant;
+                    await interaction.update({
+                        embeds: [updatedEmbed],
+                        components: [new ActionRowBuilder()
                             .addComponents(
-                                new TextInputBuilder()
-                                    .setCustomId('winnerGamertag')
-                                    .setLabel('Winner Gamertag')
-                                    .setStyle(TextInputStyle.Short)
-                                    .setRequired(true),
-                            ),
-                    );
+                                new ButtonBuilder()
+                                    .setCustomId('register')
+                                    .setLabel('REGISTER')
+                                    .setStyle(ButtonStyle.Primary),
+                                new ButtonBuilder()
+                                    .setCustomId('list')
+                                    .setLabel('LIST')
+                                    .setStyle(ButtonStyle.Secondary),
+                                new ButtonBuilder()
+                                    .setCustomId('select')
+                                    .setLabel('SELECT')
+                                    .setStyle(ButtonStyle.Success),
+                                new ButtonBuilder()
+                                    .setCustomId('winner')
+                                    .setLabel('WINNER')
+                                    .setStyle(ButtonStyle.Danger),
+                            )]
+                    });
 
-                await interaction.showModal(modal);
+                    await interaction.followUp({ content: 'Player 2 has been randomly selected!', ephemeral: true });
+                    saveTournamentData();
+                } else if (interaction.customId === 'winner') {
+                    // Show a modal to collect the winner's gamertag
+                    const modal = new ModalBuilder()
+                        .setCustomId('winnerModal')
+                        .setTitle('Enter Winner Gamertag')
+                        .addComponents(
+                            new ActionRowBuilder()
+                                .addComponents(
+                                    new TextInputBuilder()
+                                        .setCustomId('winnerGamertag')
+                                        .setLabel('Winner Gamertag')
+                                        .setStyle(TextInputStyle.Short)
+                                        .setRequired(true),
+                                ),
+                        );
+
+                    await interaction.showModal(modal);
+                }
             }
         } else if (interaction.type === InteractionType.ModalSubmit) {
             if (interaction.customId === 'createTournamentModal') {
@@ -256,7 +273,6 @@ ELRoyal  | Waiting
                     fetchReply: true
                 });
 
-                // Save tournament data
                 const tournament = {
                     id: sentMessage.id,
                     name: tournamentName,
@@ -314,21 +330,17 @@ ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
                     scheduledTasks.set(sentMessage.id, timeoutId);
                 }
             } else if (interaction.customId === 'registerModal') {
-                // Handle player registration
                 const gamertag = interaction.fields.getTextInputValue('gamertag');
                 const clanName = interaction.fields.getTextInputValue('clanname');
 
-                // Fetch tournament data
                 const tournament = tournamentData.get(interaction.message.id);
                 if (!tournament) {
                     await interaction.reply({ content: 'No tournament data found for this message.', ephemeral: true });
                     return;
                 }
 
-                // Add registration
                 tournament.registrations.push({ gamertag, clanName });
 
-                // Update the embed with the registration count
                 const originalMessage = await interaction.channel.messages.fetch(interaction.message.id);
                 const embed = originalMessage.embeds[0];
                 const updatedEmbed = EmbedBuilder.from(embed)
@@ -343,20 +355,18 @@ ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
             } else if (interaction.customId === 'winnerModal') {
                 const winnerGamertag = interaction.fields.getTextInputValue('winnerGamertag');
 
-                // Fetch tournament data
                 const tournament = tournamentData.get(interaction.message.id);
                 if (!tournament) {
                     await interaction.reply({ content: 'No tournament data found for this message.', ephemeral: true });
                     return;
                 }
 
-                // Update the tournament data with the winner's gamertag
                 tournament.winner = winnerGamertag;
 
-                // Update the embed with the winner's gamertag
                 const originalMessage = await interaction.channel.messages.fetch(interaction.message.id);
                 const embed = originalMessage.embeds[0];
                 const updatedEmbed = EmbedBuilder.from(embed)
+                    .setColor('#FF0000') // Set embed color to red
                     .setDescription(`
 \`\`\`
 Player 1 | Player 2
