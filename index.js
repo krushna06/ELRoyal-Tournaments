@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, REST, Routes, Events, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, InteractionType } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, Events } = require('discord.js');
 const { token, clientId, guildId } = require('./config.json');
 const fs = require('fs');
 const path = require('path');
@@ -10,13 +10,28 @@ const rest = new REST({ version: '10' }).setToken(token);
 // Command registration
 async function deployCommands() {
     const commands = [];
-    const commandFiles = fs.readdirSync(path.join(__dirname, 'commands')).filter(file => file.endsWith('.js'));
 
-    for (const file of commandFiles) {
-        const command = require(path.join(__dirname, 'commands', file));
-        commands.push(command.data.toJSON());
-        client.commands.set(command.data.name, command); // Store command in the collection
+    // Helper function to recursively read directories
+    function readCommandsDir(dir) {
+        const files = fs.readdirSync(dir);
+
+        for (const file of files) {
+            const fullPath = path.join(dir, file);
+            const stat = fs.statSync(fullPath);
+
+            if (stat.isDirectory()) {
+                // Recurse into subdirectories
+                readCommandsDir(fullPath);
+            } else if (file.endsWith('.js')) {
+                // Load command file
+                const command = require(fullPath);
+                commands.push(command.data.toJSON());
+                client.commands.set(command.data.name, command); // Store command in the collection
+            }
+        }
     }
+
+    readCommandsDir(path.join(__dirname, 'commands'));
 
     try {
         await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands });

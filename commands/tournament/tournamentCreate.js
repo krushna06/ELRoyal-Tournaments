@@ -2,18 +2,16 @@ const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, Act
 const path = require('path');
 const fs = require('fs');
 
-// Load owner IDs from config
-const CONFIG_FILE = path.join(__dirname, '../config.json');
+const CONFIG_FILE = path.join(__dirname, '../../config.json');
 let ownerIds = [];
 
 function loadOwnerIds() {
     if (fs.existsSync(CONFIG_FILE)) {
         const config = JSON.parse(fs.readFileSync(CONFIG_FILE));
-        ownerIds = config.ownerIds || []; // Ensure `ownerIds` is an array
+        ownerIds = config.ownerIds || [];
     }
 }
 
-// Initialize owner IDs loading
 loadOwnerIds();
 
 module.exports = {
@@ -21,7 +19,6 @@ module.exports = {
         .setName('tournament-create')
         .setDescription('Create a new tournament'),
     async execute(interaction) {
-        // Check if the user is an owner
         if (!ownerIds.includes(interaction.user.id)) {
             return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
         }
