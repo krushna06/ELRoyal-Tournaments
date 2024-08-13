@@ -127,13 +127,13 @@ ${description}
                     const updatedEmbed = EmbedBuilder.from(embed)
                         .setDescription(`
 \`\`\`
-Player 1 | Player 2
----------+---------
-ELRoyal  | ${selectedRegistrant.gamertag || 'N/A'}
+Player 1     | Player 2
+-------------+---------
+ELRoyal      | ${selectedRegistrant.gamertag || 'N/A'}
 
 Clan:
----------+---------
-ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
+-------------+---------
+The Asylium  | ${selectedRegistrant.clanName || 'N/A'}
 \`\`\`
 **Prize**: ${tournament.prize}
 **Game**: ${tournament.gameName}
@@ -229,13 +229,13 @@ ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
                     .setTitle(tournamentName)
                     .setDescription(`
 \`\`\`
-Player 1 | Player 2
----------+---------
-ELRoyal  | Waiting
+Player 1      | Player 2
+--------------+---------
+ELRoyal       | Waiting
 
 Clan:
----------+---------
-ELRoyal  | Waiting
+--------------+---------
+The Asylium   | Waiting
 \`\`\`
 **Prize**: ${prize}
 **Game**: ${gameName}
@@ -302,13 +302,13 @@ ELRoyal  | Waiting
                             const updatedEmbed = EmbedBuilder.from(embed)
                                 .setDescription(`
 \`\`\`
-Player 1 | Player 2
----------+---------
-ELRoyal  | ${selectedRegistrant.gamertag || 'N/A'}
+Player 1       | Player 2
+---------------+---------
+ELRoyal        | ${selectedRegistrant.gamertag || 'N/A'}
 
 Clan:
 ---------+---------
-ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
+The Asylium  | ${selectedRegistrant.clanName || 'N/A'}
 \`\`\`
 **Prize**: ${prize}
 **Game**: ${gameName}
@@ -370,13 +370,13 @@ ELRoyal  | ${selectedRegistrant.clanName || 'N/A'}
                     .setColor('#FF0000') // Set embed color to red
                     .setDescription(`
 \`\`\`
-Player 1 | Player 2
----------+---------
-ELRoyal  | ${tournament.selectedRegistrant ? tournament.selectedRegistrant.gamertag : 'N/A'}
+Player 1      | Player 2
+--------------+---------
+ELRoyal       | ${tournament.selectedRegistrant ? tournament.selectedRegistrant.gamertag : 'N/A'}
 
 Clan:
----------+---------
-ELRoyal  | ${tournament.selectedRegistrant ? tournament.selectedRegistrant.clanName : 'N/A'}
+--------------+---------
+The Asylium  | ${tournament.selectedRegistrant ? tournament.selectedRegistrant.clanName : 'N/A'}
 \`\`\`
 **Prize**: ${tournament.prize}
 **Game**: ${tournament.gameName}
